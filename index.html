@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MotorTech | Painel de Controle Interno</title>
+    <!-- Importação de fonte moderna para design automotivo e tecnológico -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Folha de estilos externa -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- 1. TELA DE LOGIN (SOBREPOSIÇÃO) -->
+    <div id="login-container" class="login-overlay">
+        <div class="login-card">
+            <div class="login-logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">MOTOR<span class="highlight">TECH</span></span>
+            </div>
+            <p class="login-subtitle">Acesso Restrito ao Sistema Interno</p>
+            
+            <!-- Alerta de erro de login -->
+            <div id="login-error" class="alert-error hidden">
+                Usuário ou senha incorretos!
+            </div>
+            
+            <form id="form-login" novalidate>
+                <div class="form-group">
+                    <label for="login-username">Usuário *</label>
+                    <input type="text" id="login-username" placeholder="Ex: admin ou mecanico" required autocomplete="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Senha *</label>
+                    <input type="password" id="login-password" placeholder="••••••••" required autocomplete="off">
+                </div>
+                
+                <button type="submit" class="btn-primary btn-block">Entrar no Painel</button>
+            </form>
+            
+            <!-- Instruções de login para fins de teste no curso técnico -->
+            <div class="login-help">
+                <p><strong>Acesso ao Sistema:</strong></p>
+                <ul>
+                    <li><strong>Gerente:</strong> admin / admin</li>
+                    <li><strong>Funcionários:</strong> Seu Nome / Seu CPF</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. CABEÇALHO DO SISTEMA INTERNO -->
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">MOTOR<span class="highlight">TECH</span></span>
+                <span class="badge-status-perfil" id="user-profile-badge">Admin</span>
+            </div>
+            
+            <!-- Menu de navegação por abas controladas por JS -->
+            <nav class="nav-menu">
+                <button class="nav-link active" data-target="painel-controle">Painel</button>
+                <button class="nav-link" data-target="nova-os">Nova O.S.</button>
+                <button class="nav-link" data-target="cadastro-funcionario" id="nav-btn-funcionarios">Funcionários</button>
+                <button class="nav-link" data-target="historico-painel">Histórico</button>
+                <button class="btn-logout" id="btn-logout-action">Sair</button>
+            </nav>
+
+            <!-- Botão Hamburguer para Responsivo no Celular -->
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir Menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 3. CONTEÚDO PRINCIPAL -->
+    <main class="main-content">
+
+        <!-- ABA 1: PAINEL DE CONTROLE (QUADRO DE CONTROLE) -->
+        <section id="painel-controle" class="tab-content active">
+            <div class="dashboard-header">
+                <h2>Quadro de Controle Digital</h2>
+                <p>Monitore os serviços pendentes e gerencie os trabalhos da equipe.</p>
+            </div>
+
+            <!-- Grid de Listagem Principal -->
+            <div class="dashboard-grid" id="main-dashboard-grid">
+                <!-- Coluna 1: Ordens de Serviço (Quadro Branco Digital) -->
+                <div class="dashboard-col" id="col-os-dashboard">
+                    <div class="col-title-bar">
+                        <h3>📋 Ordens de Serviço Ativas (<span id="count-os">0</span>)</h3>
+                    </div>
+                    <div class="board-container" id="board-os">
+                        <!-- Os cartões de O.S. serão gerados aqui via JS -->
+                        <div class="empty-board">
+                            <p>Nenhuma ordem de serviço pendente no quadro.</p>
+                            <button class="btn-secondary btn-sm" onclick="switchTab('nova-os')">Criar O.S. Agora</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Coluna 2: Equipe de Funcionários (Habilitada apenas para Admin) -->
+                <div class="dashboard-col" id="col-funcionarios-dashboard">
+                    <div class="col-title-bar">
+                        <h3>👥 Equipe MotorTech (<span id="count-func">0</span>)</h3>
+                    </div>
+                    <div class="board-container" id="board-funcionarios">
+                        <!-- Os cartões de funcionários serão gerados aqui via JS -->
+                        <div class="empty-board">
+                            <p>Nenhum funcionário cadastrado no sistema.</p>
+                            <button class="btn-secondary btn-sm" onclick="switchTab('cadastro-funcionario')">Cadastrar Equipe</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 2: FORMULÁRIO DE ORDEM DE SERVIÇO -->
+        <section id="nova-os" class="tab-content">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2>Nova Ordem de Serviço (O.S.)</h2>
+                    <p>Cadastre uma solicitação preliminar de serviço no quadro.</p>
+                </div>
+                
+                <!-- Feedback de Sucesso -->
+                <div id="os-success" class="alert-success hidden">
+                    <strong>Sucesso!</strong> Ordem de serviço inserida no painel.
+                </div>
+
+                <form id="form-os" class="custom-form" novalidate>
+                    <div class="form-group">
+                        <label for="os-cliente">Nome do Cliente *</label>
+                        <input type="text" id="os-cliente" placeholder="Ex: João Silva de Souza" required autocomplete="off">
+                        <span class="error-msg" id="error-cliente">O nome do cliente é obrigatório.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="os-placa">Placa do Veículo *</label>
+                            <input type="text" id="os-placa" placeholder="Ex: ABC1D23" required autocomplete="off">
+                            <span class="error-msg" id="error-placa">A placa do veículo é obrigatória.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="os-modelo">Modelo do Carro *</label>
+                            <input type="text" id="os-modelo" placeholder="Ex: Gol 1.0 2021" required autocomplete="off">
+                            <span class="error-msg" id="error-modelo">O modelo do carro é obrigatório.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="os-problema">Descrição da Falha / Problema *</label>
+                        <textarea id="os-problema" rows="4" placeholder="Descreva o defeito ou o serviço a ser feito..." required autocomplete="off"></textarea>
+                        <span class="error-msg" id="error-problema">A descrição do problema é obrigatória.</span>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block">Salvar Ordem de Serviço</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ABA 3: CADASTRO DE FUNCIONÁRIOS -->
+        <section id="cadastro-funcionario" class="tab-content">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2>Cadastro de Funcionário</h2>
+                    <p>Registre um mecânico ou colaborador administrativo no sistema.</p>
+                </div>
+
+                <!-- Feedback de Sucesso -->
+                <div id="func-success" class="alert-success hidden">
+                    <strong>Sucesso!</strong> Funcionário cadastrado com sucesso.
+                </div>
+
+                <form id="form-funcionario" class="custom-form" novalidate>
+                    <div class="form-group">
+                        <label for="func-nome">Nome Completo *</label>
+                        <input type="text" id="func-nome" placeholder="Ex: Marcelo Augusto Ramos" required autocomplete="off">
+                        <span class="error-msg" id="error-func-nome">O nome completo é obrigatório.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="func-cpf">CPF *</label>
+                            <input type="text" id="func-cpf" placeholder="000.000.000-00" required autocomplete="off">
+                            <span class="error-msg" id="error-func-cpf">Digite um CPF válido.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="func-nascimento">Data de Nascimento *</label>
+                            <input type="date" id="func-nascimento" required>
+                            <span class="error-msg" id="error-func-nasc">A data de nascimento é obrigatória.</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-primary btn-block">Cadastrar Funcionário</button>
+                </form>
+
+                <!-- Listagem rápida abaixo do cadastro -->
+                <div class="quick-list-container">
+                    <h3>Funcionários Cadastrados</h3>
+                    <div class="table-responsive">
+                        <table class="quick-table">
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CPF</th>
+                                    <th>Data Nasc.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="quick-func-tbody">
+                                <tr>
+                                    <td colspan="3" class="empty-message">Nenhum funcionário cadastrado ainda.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABA 4: HISTÓRICO DE MUDANÇAS E AÇÕES -->
+        <section id="historico-painel" class="tab-content">
+            <div class="dashboard-header">
+                <h2>Histórico de Atividades & Auditoria</h2>
+                <p>Consulte logs de ações, ordens de serviço concluídas e ordens excluídas.</p>
+            </div>
+
+            <div class="history-layout">
+                <!-- Coluna da Esquerda: Timeline de Logs de auditoria -->
+                <div class="history-card logs-card-width">
+                    <div class="card-header-clean">
+                        <h3>📋 Histórico de Operações</h3>
+                    </div>
+                    <div class="logs-timeline" id="logs-timeline-container">
+                        <!-- Carregado via JS -->
+                        <div class="empty-message">Nenhuma atividade registrada.</div>
+                    </div>
+                </div>
+
+                <!-- Coluna da Direita: Tabelas de O.S. Concluídas e Deletadas -->
+                <div class="history-tables-stack">
+                    <!-- Tabela de O.S. Concluídas -->
+                    <div class="history-card">
+                        <div class="card-header-clean">
+                            <h3>✅ O.S. Concluídas</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="quick-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Placa</th>
+                                        <th>Veículo</th>
+                                        <th>Concluído por</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="concluded-os-tbody">
+                                    <tr>
+                                        <td colspan="4" class="empty-message">Nenhuma O.S. concluída ainda.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Tabela de O.S. Excluídas -->
+                    <div class="history-card">
+                        <div class="card-header-clean">
+                            <h3>❌ O.S. Excluídas (Histórico)</h3>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="quick-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Placa</th>
+                                        <th>Veículo</th>
+                                        <th>Excluído por</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="deleted-os-tbody">
+                                    <tr>
+                                        <td colspan="4" class="empty-message">Nenhuma O.S. excluída no histórico.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 4. MODAL POP-UP PARA EDIÇÃO DE O.S. -->
+    <div id="modal-edit-os" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>✏️ Modificar Ordem de Serviço</h3>
+                <button type="button" class="modal-close" id="btn-close-modal">&times;</button>
+            </div>
+            
+            <form id="form-edit-os" class="custom-form" novalidate>
+                <input type="hidden" id="edit-os-id">
+                
+                <div class="form-group">
+                    <label for="edit-os-cliente">Nome do Cliente *</label>
+                    <input type="text" id="edit-os-cliente" required autocomplete="off">
+                    <span class="error-msg" id="error-edit-cliente">O nome do cliente é obrigatório.</span>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="edit-os-placa">Placa do Veículo *</label>
+                        <input type="text" id="edit-os-placa" required autocomplete="off">
+                        <span class="error-msg" id="error-edit-placa">A placa é obrigatória.</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-os-modelo">Modelo do Carro *</label>
+                        <input type="text" id="edit-os-modelo" required autocomplete="off">
+                        <span class="error-msg" id="error-edit-modelo">O modelo do carro é obrigatório.</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-os-problema">Descrição da Falha / Problema *</label>
+                    <textarea id="edit-os-problema" rows="4" required autocomplete="off"></textarea>
+                    <span class="error-msg" id="error-edit-problema">A descrição do problema é obrigatória.</span>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-cancel-modal">Cancelar</button>
+                    <button type="submit" class="btn-primary">Salvar Alterações</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Rodapé -->
+    <footer class="app-footer">
+        <p>&copy; 2026 MotorTech. Todos os direitos reservados. Armazenamento 100% Local (Navegador).</p>
+    </footer>
+
+    <!-- Script de lógica -->
+    <script src="script.js"></script>
+</body>
+</html>
