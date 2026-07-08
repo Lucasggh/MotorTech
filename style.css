@@ -1018,3 +1018,126 @@ html, body {
         grid-template-columns: 1fr;
     }
 }
+
+/* 15. ESTILOS DO MÓDULO DE ORÇAMENTO */
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--accent);
+    margin-top: -5px;
+    font-style: italic;
+    opacity: 0.8;
+}
+
+.confirm-content {
+    margin-bottom: 25px;
+    color: var(--text-main);
+}
+
+.confirm-content p {
+    margin-bottom: 15px;
+    font-size: 0.95rem;
+}
+
+.review-box {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.review-box p {
+    margin: 0;
+    font-size: 0.9rem;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+.review-box p:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.orc-card {
+    background-color: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-left: 5px solid #ffca28; /* Amarelo para Orçamento */
+    border-radius: 6px;
+    padding: 16px;
+    position: relative;
+    transition: all var(--transition-fast);
+    animation: slideIn var(--transition-fast);
+}
+
+.orc-card:hover {
+    border-color: #ffca28;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.orc-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.orc-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.orc-card-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* 13. ESTILOS DE PRIORIDADE E FILTROS */
+.badge-priority {
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.badge-priority-baixa {
+    background-color: rgba(0, 230, 118, 0.15);
+    color: #00e676;
+    border: 1px solid #00e676;
+}
+.badge-priority-media {
+    background-color: rgba(255, 193, 7, 0.15);
+    color: #ffc107;
+    border: 1px solid #ffc107;
+}
+.badge-priority-alta {
+    background-color: rgba(255, 107, 0, 0.15);
+    color: var(--accent);
+    border: 1px solid var(--accent);
+}
+.badge-priority-critica {
+    background-color: rgba(255, 82, 82, 0.15);
+    color: var(--error);
+    border: 1px solid var(--error);
+    animation: pulse-critical 2s infinite;
+}
+
+@keyframes pulse-critical {
+    0% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0.4); }
+    70% { box-shadow: 0 0 0 6px rgba(255, 82, 82, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 82, 82, 0); }
+}
+
+.custom-select {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 14px;
+    border-radius: var(--border-radius);
+    width: 100%;
+    outline: none;
+    transition: var(--transition-fast);
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+.custom-select:focus {
+    border-color: var(--border-focus);
+}

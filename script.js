@@ -6,6 +6,7 @@
  */
 
 const LOCAL_STORAGE_KEY_OS = "motortech_os";
+const LOCAL_STORAGE_KEY_ORC = "motortech_orc";
 const LOCAL_STORAGE_KEY_FUNC = "motortech_employees";
 const LOCAL_STORAGE_KEY_SESSION = "motortech_session";
 const LOCAL_STORAGE_KEY_HISTORY = "motortech_history";
@@ -20,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function inicializarApp() {
     // 1. Inicializar bancos de dados se não existirem
     if (!localStorage.getItem(LOCAL_STORAGE_KEY_OS)) localStorage.setItem(LOCAL_STORAGE_KEY_OS, JSON.stringify([]));
+    if (!localStorage.getItem(LOCAL_STORAGE_KEY_ORC)) localStorage.setItem(LOCAL_STORAGE_KEY_ORC, JSON.stringify([]));
     if (!localStorage.getItem(LOCAL_STORAGE_KEY_FUNC)) localStorage.setItem(LOCAL_STORAGE_KEY_FUNC, JSON.stringify([]));
     if (!localStorage.getItem(LOCAL_STORAGE_KEY_HISTORY)) {
         localStorage.setItem(LOCAL_STORAGE_KEY_HISTORY, JSON.stringify({
@@ -37,6 +39,27 @@ function inicializarApp() {
     configurarFormularios();
     configurarMenuMobile();
     configurarModalEdicao();
+    configurarFiltros();
+}
+
+function configurarFiltros() {
+    const filterDate = document.getElementById("filter-date");
+    const filterPriority = document.getElementById("filter-priority");
+    const btnClearFilters = document.getElementById("btn-clear-filters");
+
+    if(filterDate) {
+        filterDate.addEventListener("change", atualizarTelas);
+    }
+    if(filterPriority) {
+        filterPriority.addEventListener("change", atualizarTelas);
+    }
+    if(btnClearFilters) {
+        btnClearFilters.addEventListener("click", () => {
+            if(filterDate) filterDate.value = "";
+            if(filterPriority) filterPriority.value = "";
+            atualizarTelas();
+        });
+    }
 }
 
 /* ==========================================================================
@@ -121,7 +144,7 @@ function aplicarPermissoes(user) {
     if (user.role === "admin") {
         navFuncionarios.style.display = "block";
         colFuncionarios.style.display = "block";
-        mainGrid.style.gridTemplateColumns = "1.4fr 1fr";
+        mainGrid.style.gridTemplateColumns = "1fr 1fr 1fr";
         badgePerfil.textContent = "Admin";
         badgePerfil.style.backgroundColor = "rgba(255, 107, 0, 0.2)";
         badgePerfil.style.color = "var(--accent)";
@@ -129,7 +152,7 @@ function aplicarPermissoes(user) {
         // Modo Funcionário: Esconde a aba e a coluna
         navFuncionarios.style.display = "none";
         colFuncionarios.style.display = "none";
-        mainGrid.style.gridTemplateColumns = "1fr"; // Ocupa a tela toda com as O.S.
+        mainGrid.style.gridTemplateColumns = "1fr 1fr"; // Ocupa a tela com Orçamentos e O.S.
         badgePerfil.textContent = "Funcionário";
         badgePerfil.style.backgroundColor = "rgba(255, 255, 255, 0.1)";
         badgePerfil.style.color = "var(--text-main)";
@@ -227,6 +250,170 @@ function configurarFormularios() {
     const formFunc = document.getElementById("form-funcionario");
     const cpfInput = document.getElementById("func-cpf");
 
+    // FORMULÁRIO DE ORÇAMENTO
+    const formOrcamento = document.getElementById("form-orcamento");
+    const btnRevisarOrcamento = document.getElementById("btn-revisar-orcamento");
+    const modalConfirmOrc = document.getElementById("modal-confirm-orc");
+    const btnCloseConfirmOrc = document.getElementById("btn-close-confirm-orc");
+    const btnCancelConfirmOrc = document.getElementById("btn-cancel-confirm-orc");
+    const btnSaveConfirmOrc = document.getElementById("btn-save-confirm-orc");
+
+    // Validação e Revisão do Orçamento
+    btnRevisarOrcamento.addEventListener("click", () => {
+        const clienteInput = document.getElementById("orc-cliente");
+        const telefoneInput = document.getElementById("orc-telefone");
+        const placaInput = document.getElementById("orc-placa");
+        const modeloInput = document.getElementById("orc-modelo");
+        const prioridadeInput = document.getElementById("orc-prioridade");
+        const problemaInput = document.getElementById("orc-problema");
+
+        removerErrosFormulario(formOrcamento);
+
+        let formValido = true;
+        const clienteVal = clienteInput.value.trim();
+        if (!clienteVal || clienteVal.length < 3 || !clienteVal.includes(" ") || /\d/.test(clienteVal)) {
+            marcarErroCampo(clienteInput, "error-orc-cliente", "Preencha Nome e Sobrenome (sem números).");
+            formValido = false;
+        }
+        const telLimpo = telefoneInput.value.replace(/\D/g, '');
+        if (!telLimpo || telLimpo.length < 10 || /^(\d)\1+$/.test(telLimpo)) {
+            marcarErroCampo(telefoneInput, "error-orc-telefone", "Informe um telefone válido real com DDD.");
+            formValido = false;
+        }
+        const placaRegex = /^[A-Z]{3}-?\d[A-Z0-9]\d{2}$/i;
+        if (!placaInput.value.trim() || !placaRegex.test(placaInput.value.trim())) {
+            marcarErroCampo(placaInput, "error-orc-placa", "Placa inválida. Use o padrão Mercosul ou antigo.");
+            formValido = false;
+        }
+        if (!modeloInput.value.trim() || modeloInput.value.trim().length < 2 || !/[a-zA-Z]/.test(modeloInput.value)) {
+            marcarErroCampo(modeloInput, "error-orc-modelo", "Informe o nome/modelo do carro (deve conter letras).");
+            formValido = false;
+        }
+        if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
+            marcarErroCampo(problemaInput, "error-orc-problema", "Descreva detalhadamente o problema (mínimo 10 caracteres).");
+            formValido = false;
+        }
+
+        if (formValido) {
+            const dataHoje = new Date().toLocaleDateString("pt-BR");
+            const placaDigitada = placaInput.value.trim().toUpperCase();
+            const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
+            const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
+            
+            const conflitoOS = listaOS.some(os => os.placa === placaDigitada && os.dataAbertura === dataHoje);
+            const conflitoOrc = listaOrc.some(orc => orc.placa === placaDigitada && orc.dataAbertura === dataHoje);
+            
+            if (conflitoOS || conflitoOrc) {
+                marcarErroCampo(placaInput, "error-orc-placa", "Já existe um registro (O.S. ou Orçamento) ativo para esta placa hoje.");
+                formValido = false;
+                alert("Conflito detectado: Esta placa já possui uma solicitação ativa criada hoje. Por favor, verifique o painel ou edite a existente.");
+            }
+        }
+
+        if (formValido) {
+            // Preenche modal de revisão
+            document.getElementById("rev-cliente").textContent = clienteInput.value.trim();
+            document.getElementById("rev-telefone").textContent = telefoneInput.value.trim();
+            document.getElementById("rev-placa").textContent = placaInput.value.trim().toUpperCase();
+            document.getElementById("rev-modelo").textContent = modeloInput.value.trim();
+            document.getElementById("rev-prioridade").textContent = prioridadeInput.value;
+            document.getElementById("rev-problema").textContent = problemaInput.value.trim();
+            
+            modalConfirmOrc.classList.remove("hidden");
+        }
+    });
+
+    const fecharModalConfirmOrc = () => {
+        modalConfirmOrc.classList.add("hidden");
+    };
+
+    btnCloseConfirmOrc.addEventListener("click", fecharModalConfirmOrc);
+    btnCancelConfirmOrc.addEventListener("click", fecharModalConfirmOrc);
+
+    // Salvar Orçamento Final
+    btnSaveConfirmOrc.addEventListener("click", () => {
+        const novoOrc = {
+            id: Date.now(),
+            cliente: document.getElementById("orc-cliente").value.trim(),
+            telefone: document.getElementById("orc-telefone").value.trim(),
+            placa: document.getElementById("orc-placa").value.trim().toUpperCase(),
+            modelo: document.getElementById("orc-modelo").value.trim(),
+            prioridade: document.getElementById("orc-prioridade").value,
+            problema: document.getElementById("orc-problema").value.trim(),
+            dataAbertura: new Date().toLocaleDateString("pt-BR")
+        };
+
+        const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
+        listaOrc.push(novoOrc);
+        salvarDados(LOCAL_STORAGE_KEY_ORC, listaOrc);
+        
+        registrarLogDeAuditoria(`Criou solicitação de Orçamento p/ ${novoOrc.cliente}`, "criou");
+
+        fecharModalConfirmOrc();
+        formOrcamento.reset();
+        
+        // Exibir feedback custom ou voltar para painel
+        alert("Orçamento cadastrado com sucesso! Aguardando avaliação.");
+        switchTab("painel-controle");
+        atualizarTelas();
+    });
+
+    // Modal de Aprovação de Orçamento
+    const modalApproveOrc = document.getElementById("modal-approve-orc");
+    const formApproveOrc = document.getElementById("form-approve-orc");
+    
+    const fecharModalApprove = () => {
+        modalApproveOrc.classList.add("hidden");
+        formApproveOrc.reset();
+        removerErrosFormulario(formApproveOrc);
+    };
+
+    document.getElementById("btn-close-approve-orc").addEventListener("click", fecharModalApprove);
+    document.getElementById("btn-cancel-approve-orc").addEventListener("click", fecharModalApprove);
+
+    formApproveOrc.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const precoInput = document.getElementById("approve-preco");
+        removerErrosFormulario(formApproveOrc);
+
+        if (!precoInput.value.trim()) {
+            marcarErroCampo(precoInput, "error-approve-preco");
+            return;
+        }
+
+        const idOrc = parseInt(document.getElementById("approve-orc-id").value);
+        const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
+        const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
+        
+        const index = listaOrc.findIndex(o => o.id === idOrc);
+        if (index > -1) {
+            const orc = listaOrc[index];
+            const preco = precoInput.value.trim();
+            
+            // Cria nova O.S. baseada no orçamento
+            const novaOS = {
+                id: Date.now(),
+                cliente: orc.cliente,
+                placa: orc.placa,
+                modelo: orc.modelo,
+                prioridade: orc.prioridade || "Média",
+                preco: preco,
+                problema: `[Aprovado do Orçamento] Telefone: ${orc.telefone}\n\nRelato: ${orc.problema}`,
+                dataAbertura: new Date().toLocaleDateString("pt-BR")
+            };
+            
+            listaOS.push(novaOS);
+            listaOrc.splice(index, 1);
+            
+            salvarDados(LOCAL_STORAGE_KEY_ORC, listaOrc);
+            salvarDados(LOCAL_STORAGE_KEY_OS, listaOS);
+            
+            registrarLogDeAuditoria(`Aprovou o orçamento de ${orc.cliente} (${preco}) e gerou a O.S.`, "editou");
+            atualizarTelas();
+            fecharModalApprove();
+        }
+    });
+
     // Máscara dinâmica de CPF
     cpfInput.addEventListener("input", (e) => {
         let val = e.target.value.replace(/\D/g, "");
@@ -235,6 +422,38 @@ function configurarFormularios() {
         if (val.length > 9) val = val.replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d{1,2})/, "$1.$2.$3-$4");
         e.target.value = val.substring(0, 14);
     });
+
+    // Máscara de Telefone (Orçamento)
+    const telefoneOrcInput = document.getElementById("orc-telefone");
+    telefoneOrcInput.addEventListener("input", (e) => {
+        let val = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+        if (val.length > 2) val = val.replace(/^(\d{2})(\d)/g, "($1) $2");
+        if (val.length > 9) val = val.replace(/(\d{5})(\d)/, "$1-$2"); // Celular
+        else if (val.length > 8) val = val.replace(/(\d{4})(\d)/, "$1-$2"); // Fixo
+        e.target.value = val.substring(0, 15);
+    });
+
+    // Máscara de Preço (Aprovação de Orçamento)
+    const precoApproveInput = document.getElementById("approve-preco");
+    precoApproveInput.addEventListener("input", (e) => {
+        let val = e.target.value.replace(/\D/g, ""); // Só números
+        if (val === "") {
+            e.target.value = "";
+            return;
+        }
+        val = (parseInt(val, 10) / 100).toFixed(2) + "";
+        val = val.replace(".", ",");
+        val = val.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.");
+        e.target.value = "R$ " + val;
+    });
+
+    // Formatação de Placas (Maiúsculas e limitando caracteres)
+    const formatarPlaca = (e) => {
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, "").substring(0, 8);
+    };
+    document.getElementById("orc-placa").addEventListener("input", formatarPlaca);
+    document.getElementById("os-placa").addEventListener("input", formatarPlaca);
+    document.getElementById("edit-os-placa").addEventListener("input", formatarPlaca);
 
     // Submissão Nova O.S.
     formOS.addEventListener("submit", (e) => {
@@ -248,10 +467,40 @@ function configurarFormularios() {
         removerErrosFormulario(formOS);
 
         let formValido = true;
-        if (!clienteInput.value.trim()) { marcarErroCampo(clienteInput, "error-cliente"); formValido = false; }
-        if (!placaInput.value.trim()) { marcarErroCampo(placaInput, "error-placa"); formValido = false; }
-        if (!modeloInput.value.trim()) { marcarErroCampo(modeloInput, "error-modelo"); formValido = false; }
-        if (!problemaInput.value.trim()) { marcarErroCampo(problemaInput, "error-problema"); formValido = false; }
+        const clienteVal = clienteInput.value.trim();
+        if (!clienteVal || clienteVal.length < 3 || !clienteVal.includes(" ") || /\d/.test(clienteVal)) {
+            marcarErroCampo(clienteInput, "error-cliente", "Preencha Nome e Sobrenome (sem números).");
+            formValido = false;
+        }
+        const placaRegex = /^[A-Z]{3}-?\d[A-Z0-9]\d{2}$/i;
+        if (!placaInput.value.trim() || !placaRegex.test(placaInput.value.trim())) {
+            marcarErroCampo(placaInput, "error-placa", "Placa inválida. Use o padrão Mercosul ou antigo.");
+            formValido = false;
+        }
+        if (!modeloInput.value.trim() || modeloInput.value.trim().length < 2 || !/[a-zA-Z]/.test(modeloInput.value)) {
+            marcarErroCampo(modeloInput, "error-modelo", "Informe o nome/modelo do carro (deve conter letras).");
+            formValido = false;
+        }
+        if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
+            marcarErroCampo(problemaInput, "error-problema", "Descreva detalhadamente o problema (mínimo 10 caracteres).");
+            formValido = false;
+        }
+
+        if (formValido) {
+            const dataHoje = new Date().toLocaleDateString("pt-BR");
+            const placaDigitada = placaInput.value.trim().toUpperCase();
+            const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
+            const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
+            
+            const conflitoOS = listaOS.some(os => os.placa === placaDigitada && os.dataAbertura === dataHoje);
+            const conflitoOrc = listaOrc.some(orc => orc.placa === placaDigitada && orc.dataAbertura === dataHoje);
+            
+            if (conflitoOS || conflitoOrc) {
+                marcarErroCampo(placaInput, "error-placa", "Já existe um registro (O.S. ou Orçamento) ativo para esta placa hoje.");
+                formValido = false;
+                alert("Conflito detectado: Esta placa já possui uma solicitação ativa criada hoje. Por favor, verifique o painel ou edite a existente.");
+            }
+        }
 
         if (formValido) {
             const novaOS = {
@@ -259,6 +508,7 @@ function configurarFormularios() {
                 cliente: clienteInput.value.trim(),
                 placa: placaInput.value.trim().toUpperCase(),
                 modelo: modeloInput.value.trim(),
+                prioridade: document.getElementById("os-prioridade").value,
                 problema: problemaInput.value.trim(),
                 dataAbertura: new Date().toLocaleDateString("pt-BR")
             };
@@ -338,15 +588,30 @@ function configurarModalEdicao() {
         const clienteInput = document.getElementById("edit-os-cliente");
         const placaInput = document.getElementById("edit-os-placa");
         const modeloInput = document.getElementById("edit-os-modelo");
+        const prioridadeInput = document.getElementById("edit-os-prioridade");
         const problemaInput = document.getElementById("edit-os-problema");
 
         removerErrosFormulario(formEdit);
         let formValido = true;
 
-        if (!clienteInput.value.trim()) { marcarErroCampo(clienteInput, "error-edit-cliente"); formValido = false; }
-        if (!placaInput.value.trim()) { marcarErroCampo(placaInput, "error-edit-placa"); formValido = false; }
-        if (!modeloInput.value.trim()) { marcarErroCampo(modeloInput, "error-edit-modelo"); formValido = false; }
-        if (!problemaInput.value.trim()) { marcarErroCampo(problemaInput, "error-edit-problema"); formValido = false; }
+        const clienteVal = clienteInput.value.trim();
+        if (!clienteVal || clienteVal.length < 3 || !clienteVal.includes(" ") || /\d/.test(clienteVal)) {
+            marcarErroCampo(clienteInput, "error-edit-cliente", "Preencha Nome e Sobrenome (sem números).");
+            formValido = false;
+        }
+        const placaRegex = /^[A-Z]{3}-?\d[A-Z0-9]\d{2}$/i;
+        if (!placaInput.value.trim() || !placaRegex.test(placaInput.value.trim())) {
+            marcarErroCampo(placaInput, "error-edit-placa", "Placa inválida. Use o padrão Mercosul ou antigo.");
+            formValido = false;
+        }
+        if (!modeloInput.value.trim() || modeloInput.value.trim().length < 2 || !/[a-zA-Z]/.test(modeloInput.value)) {
+            marcarErroCampo(modeloInput, "error-edit-modelo", "Informe o nome/modelo do carro (deve conter letras).");
+            formValido = false;
+        }
+        if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
+            marcarErroCampo(problemaInput, "error-edit-problema", "Descreva detalhadamente o problema (mínimo 10 caracteres).");
+            formValido = false;
+        }
 
         if (formValido) {
             const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
@@ -356,6 +621,7 @@ function configurarModalEdicao() {
                 listaOS[osIndex].cliente = clienteInput.value.trim();
                 listaOS[osIndex].placa = placaInput.value.trim().toUpperCase();
                 listaOS[osIndex].modelo = modeloInput.value.trim();
+                listaOS[osIndex].prioridade = prioridadeInput.value;
                 listaOS[osIndex].problema = problemaInput.value.trim();
                 
                 salvarDados(LOCAL_STORAGE_KEY_OS, listaOS);
@@ -376,6 +642,7 @@ window.abrirModalEdicao = function(id) {
         document.getElementById("edit-os-cliente").value = osParaEditar.cliente;
         document.getElementById("edit-os-placa").value = osParaEditar.placa;
         document.getElementById("edit-os-modelo").value = osParaEditar.modelo;
+        document.getElementById("edit-os-prioridade").value = osParaEditar.prioridade || "Média";
         document.getElementById("edit-os-problema").value = osParaEditar.problema;
         
         document.getElementById("modal-edit-os").classList.remove("hidden");
@@ -434,6 +701,27 @@ window.removerOS = function(id) {
     }
 }
 
+window.aprovarOrcamento = function(id) {
+    document.getElementById("approve-orc-id").value = id;
+    document.getElementById("modal-approve-orc").classList.remove("hidden");
+}
+
+window.rejeitarOrcamento = function(id) {
+    if (confirm("Deseja rejeitar e excluir este orçamento?")) {
+        const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
+        const index = listaOrc.findIndex(o => o.id === id);
+        if (index > -1) {
+            const orc = listaOrc[index];
+            listaOrc.splice(index, 1);
+            
+            salvarDados(LOCAL_STORAGE_KEY_ORC, listaOrc);
+            
+            registrarLogDeAuditoria(`Rejeitou/excluiu o orçamento de ${orc.cliente}`, "excluiu");
+            atualizarTelas();
+        }
+    }
+}
+
 window.removerFuncionario = function(id) {
     if (confirm("Deseja remover o acesso deste funcionário?")) {
         const listaFunc = obterDados(LOCAL_STORAGE_KEY_FUNC);
@@ -454,13 +742,34 @@ window.removerFuncionario = function(id) {
    ========================================================================== */
 
 function atualizarTelas() {
-    const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
+    let listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
+    let listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
     const listaFunc = obterDados(LOCAL_STORAGE_KEY_FUNC);
 
+    // Apply Filters
+    const filterDate = document.getElementById("filter-date")?.value;
+    const filterPriority = document.getElementById("filter-priority")?.value;
+
+    if (filterDate) {
+        const parts = filterDate.split("-");
+        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`; // YYYY-MM-DD to DD/MM/YYYY
+        listaOS = listaOS.filter(os => os.dataAbertura === formattedDate);
+        listaOrc = listaOrc.filter(orc => orc.dataAbertura === formattedDate);
+    }
+    
+    if (filterPriority) {
+        listaOS = listaOS.filter(os => (os.prioridade || "Média") === filterPriority);
+        listaOrc = listaOrc.filter(orc => (orc.prioridade || "Média") === filterPriority);
+    }
+
     document.getElementById("count-os").textContent = listaOS.length;
+    if(document.getElementById("count-orc")) {
+        document.getElementById("count-orc").textContent = listaOrc.length;
+    }
     document.getElementById("count-func").textContent = listaFunc.length;
 
     renderizarPainelOS(listaOS);
+    renderizarPainelOrcamentos(listaOrc);
     
     // Atualiza funcionários apenas se for admin
     if (currentUser && currentUser.role === "admin") {
@@ -494,14 +803,56 @@ function renderizarPainelOS(listaOS) {
                 <span class="os-card-date">${os.dataAbertura}</span>
             </div>
             <div class="os-badges">
+                <span class="badge" style="background-color: rgba(0, 188, 212, 0.15); color: #00bcd4; border: 1px solid #00bcd4;">CONFIRMADO / EM EXECUÇÃO</span>
                 <span class="badge badge-plate">${escaparHTML(os.placa)}</span>
                 <span class="badge badge-car">${escaparHTML(os.modelo)}</span>
+                <span class="badge badge-priority badge-priority-${(os.prioridade || 'Média').toLowerCase().replace('é', 'e').replace('í', 'i')}">${escaparHTML(os.prioridade || 'Média')}</span>
+                ${os.preco ? `<span class="badge" style="background-color:var(--success-bg); color:var(--success); border: 1px solid var(--success);">${escaparHTML(os.preco)}</span>` : ''}
             </div>
             <div class="os-description">${escaparHTML(os.problema)}</div>
             <div class="os-card-footer">
                 <button class="btn-edit btn-sm" onclick="abrirModalEdicao(${os.id})">Editar</button>
                 <button class="btn-success btn-sm" onclick="concluirOS(${os.id})">✔ Concluir</button>
                 <button class="btn-danger btn-sm" onclick="removerOS(${os.id})">✖ Excluir</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderizarPainelOrcamentos(listaOrc) {
+    const container = document.getElementById("board-orcamentos");
+    if(!container) return;
+    
+    container.innerHTML = ""; 
+
+    if (listaOrc.length === 0) {
+        container.innerHTML = `
+            <div class="empty-board">
+                <p>Nenhum orçamento pendente.</p>
+                <button class="btn-secondary btn-sm" onclick="switchTab('novo-orcamento')">Criar Orçamento</button>
+            </div>`;
+        return;
+    }
+
+    listaOrc.forEach(orc => {
+        const card = document.createElement("div");
+        card.className = "orc-card";
+        card.innerHTML = `
+            <div class="orc-card-header">
+                <span class="orc-card-title">${escaparHTML(orc.cliente)}</span>
+                <span class="orc-card-date">${orc.dataAbertura}</span>
+            </div>
+            <div class="os-badges">
+                <span class="badge" style="background-color: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid #ffc107;">PENDENTE APROVAÇÃO</span>
+                <span class="badge badge-plate">${escaparHTML(orc.placa)}</span>
+                <span class="badge badge-car">${escaparHTML(orc.modelo)}</span>
+                <span class="badge badge-priority badge-priority-${(orc.prioridade || 'Média').toLowerCase().replace('é', 'e').replace('í', 'i')}">${escaparHTML(orc.prioridade || 'Média')}</span>
+            </div>
+            <div class="os-description">${escaparHTML(orc.problema)}</div>
+            <div class="os-card-footer">
+                <button class="btn-success btn-sm" onclick="aprovarOrcamento(${orc.id})">✔ Aprovar (Vira O.S.)</button>
+                <button class="btn-danger btn-sm" onclick="rejeitarOrcamento(${orc.id})">✖ Rejeitar</button>
             </div>
         `;
         container.appendChild(card);
@@ -583,7 +934,7 @@ function renderizarHistorico() {
     if(concludedBody) {
         concludedBody.innerHTML = "";
         if (historico.concluidas.length === 0) {
-            concludedBody.innerHTML = `<tr><td colspan="4" class="empty-message">Nenhuma O.S. concluída no sistema.</td></tr>`;
+            concludedBody.innerHTML = `<tr><td colspan="5" class="empty-message">Nenhuma O.S. concluída no sistema.</td></tr>`;
         } else {
             historico.concluidas.forEach(os => {
                 const tr = document.createElement("tr");
@@ -591,7 +942,8 @@ function renderizarHistorico() {
                     <td>${escaparHTML(os.cliente)}</td>
                     <td>${escaparHTML(os.placa)}</td>
                     <td>${escaparHTML(os.modelo)}</td>
-                    <td><span class="log-user">@${os.concluidaPor}</span> em ${os.dataConclusao}</td>
+                    <td><strong style="color:var(--success)">${escaparHTML(os.preco || 'N/A')}</strong></td>
+                    <td><span class="badge" style="background-color: var(--success-bg); color: var(--success); border: 1px solid var(--success); margin-bottom: 5px;">RESOLVIDO</span><br><span class="log-user">@${os.concluidaPor}</span> em ${os.dataConclusao}</td>
                 `;
                 concludedBody.appendChild(tr);
             });
@@ -603,7 +955,7 @@ function renderizarHistorico() {
     if(deletedBody) {
         deletedBody.innerHTML = "";
         if (historico.excluidas.length === 0) {
-            deletedBody.innerHTML = `<tr><td colspan="4" class="empty-message">Nenhuma exclusão registrada.</td></tr>`;
+            deletedBody.innerHTML = `<tr><td colspan="5" class="empty-message">Nenhuma exclusão registrada.</td></tr>`;
         } else {
             historico.excluidas.forEach(os => {
                 const tr = document.createElement("tr");
@@ -611,7 +963,8 @@ function renderizarHistorico() {
                     <td>${escaparHTML(os.cliente)}</td>
                     <td>${escaparHTML(os.placa)}</td>
                     <td>${escaparHTML(os.modelo)}</td>
-                    <td><span style="color: var(--error);">@${os.excluidaPor}</span> em ${os.dataExclusao}</td>
+                    <td><strong style="color:var(--error)">${escaparHTML(os.preco || 'N/A')}</strong></td>
+                    <td><span class="badge" style="background-color: var(--error-bg); color: var(--error); border: 1px solid var(--error); margin-bottom: 5px;">CANCELADO</span><br><span style="color: var(--error);">@${os.excluidaPor}</span> em ${os.dataExclusao}</td>
                 `;
                 deletedBody.appendChild(tr);
             });
@@ -632,10 +985,15 @@ function salvarDados(chave, objeto) {
     localStorage.setItem(chave, JSON.stringify(objeto));
 }
 
-function marcarErroCampo(inputElement, errorSpanId) {
+function marcarErroCampo(inputElement, errorSpanId, mensagem) {
     inputElement.classList.add("invalid-field");
     const errorSpan = document.getElementById(errorSpanId);
-    if (errorSpan) errorSpan.classList.add("visible");
+    if (errorSpan) {
+        errorSpan.classList.add("visible");
+        if (mensagem) {
+            errorSpan.textContent = mensagem;
+        }
+    }
 }
 
 function removerErrosFormulario(formElement) {

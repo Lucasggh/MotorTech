@@ -64,6 +64,7 @@
             <!-- Menu de navegação por abas controladas por JS -->
             <nav class="nav-menu">
                 <button class="nav-link active" data-target="painel-controle">Painel</button>
+                <button class="nav-link" data-target="novo-orcamento">Novo Orçamento</button>
                 <button class="nav-link" data-target="nova-os">Nova O.S.</button>
                 <button class="nav-link" data-target="cadastro-funcionario" id="nav-btn-funcionarios">Funcionários</button>
                 <button class="nav-link" data-target="historico-painel">Histórico</button>
@@ -89,12 +90,46 @@
                 <p>Monitore os serviços pendentes e gerencie os trabalhos da equipe.</p>
             </div>
 
+            <!-- Filtros do Dashboard -->
+            <div class="dashboard-filters" style="margin-bottom: 20px; display: flex; gap: 15px; background: var(--bg-secondary); padding: 15px; border-radius: var(--border-radius); border: 1px solid var(--border-color);">
+                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                    <label for="filter-date" style="margin-bottom: 5px; display: block; color: var(--text-muted); font-size: 0.9rem;">Filtrar por Data:</label>
+                    <input type="date" id="filter-date" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 4px; width: 100%;">
+                </div>
+                <div class="form-group" style="margin-bottom: 0; flex: 1;">
+                    <label for="filter-priority" style="margin-bottom: 5px; display: block; color: var(--text-muted); font-size: 0.9rem;">Filtrar por Prioridade:</label>
+                    <select id="filter-priority" style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-main); padding: 10px; border-radius: 4px; width: 100%;">
+                        <option value="">Todas as Prioridades</option>
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Crítica">Crítica</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button id="btn-clear-filters" class="btn-secondary" style="height: 42px;">Limpar Filtros</button>
+                </div>
+            </div>
+
             <!-- Grid de Listagem Principal -->
             <div class="dashboard-grid" id="main-dashboard-grid">
+                <!-- Coluna 0: Orçamentos Pendentes -->
+                <div class="dashboard-col" id="col-orcamentos-dashboard">
+                    <div class="col-title-bar">
+                        <h3>📝 Orçamentos (<span id="count-orc">0</span>)</h3>
+                    </div>
+                    <div class="board-container" id="board-orcamentos">
+                        <div class="empty-board">
+                            <p>Nenhum orçamento pendente.</p>
+                            <button class="btn-secondary btn-sm" onclick="switchTab('novo-orcamento')">Criar Orçamento</button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Coluna 1: Ordens de Serviço (Quadro Branco Digital) -->
                 <div class="dashboard-col" id="col-os-dashboard">
                     <div class="col-title-bar">
-                        <h3>📋 Ordens de Serviço Ativas (<span id="count-os">0</span>)</h3>
+                        <h3>📋 O.S. Ativas (<span id="count-os">0</span>)</h3>
                     </div>
                     <div class="board-container" id="board-os">
                         <!-- Os cartões de O.S. serão gerados aqui via JS -->
@@ -118,6 +153,66 @@
                         </div>
                     </div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ABA 1.5: FORMULÁRIO DE ORÇAMENTO -->
+        <section id="novo-orcamento" class="tab-content">
+            <div class="form-wrapper">
+                <div class="form-header">
+                    <h2>Solicitação de Orçamento</h2>
+                    <p>Preencha os dados abaixo para iniciar uma avaliação. Campos marcados com * são obrigatórios.</p>
+                </div>
+                
+                <form id="form-orcamento" class="custom-form" novalidate>
+                    <div class="form-group">
+                        <label for="orc-cliente">Nome do Cliente *</label>
+                        <input type="text" id="orc-cliente" placeholder="Ex: João Silva de Souza" required autocomplete="off">
+                        <small class="form-hint">Necessário para identificar o dono do veículo e aprovação posterior.</small>
+                        <span class="error-msg" id="error-orc-cliente">O nome do cliente é obrigatório.</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="orc-telefone">Telefone para Contato *</label>
+                        <input type="text" id="orc-telefone" placeholder="(00) 00000-0000" required autocomplete="off">
+                        <small class="form-hint">Usaremos este número para enviar o valor do orçamento ao cliente.</small>
+                        <span class="error-msg" id="error-orc-telefone">O telefone é obrigatório.</span>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="orc-placa">Placa do Veículo *</label>
+                            <input type="text" id="orc-placa" placeholder="Ex: ABC1D23" required autocomplete="off">
+                            <small class="form-hint">Ajuda a buscar o histórico do carro na oficina.</small>
+                            <span class="error-msg" id="error-orc-placa">A placa é obrigatória.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="orc-modelo">Modelo do Carro *</label>
+                            <input type="text" id="orc-modelo" placeholder="Ex: Gol 1.0 2021" required autocomplete="off">
+                            <small class="form-hint">Importante para saber qual peça comprar.</small>
+                            <span class="error-msg" id="error-orc-modelo">O modelo é obrigatório.</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="orc-prioridade">Prioridade *</label>
+                        <select id="orc-prioridade" required class="custom-select">
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média" selected>Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="orc-problema">Sintomas / O que o cliente relatou? *</label>
+                        <textarea id="orc-problema" rows="4" placeholder="Ex: Barulho na roda direita ao frear..." required autocomplete="off"></textarea>
+                        <small class="form-hint">Descreva com o máximo de detalhes para facilitar o diagnóstico do mecânico.</small>
+                        <span class="error-msg" id="error-orc-problema">A descrição é obrigatória.</span>
+                    </div>
+
+                    <button type="button" class="btn-primary btn-block" id="btn-revisar-orcamento">Revisar e Salvar Orçamento</button>
+                </form>
             </div>
         </section>
 
@@ -152,6 +247,16 @@
                             <input type="text" id="os-modelo" placeholder="Ex: Gol 1.0 2021" required autocomplete="off">
                             <span class="error-msg" id="error-modelo">O modelo do carro é obrigatório.</span>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="os-prioridade">Prioridade *</label>
+                        <select id="os-prioridade" required class="custom-select">
+                            <option value="Baixa">Baixa</option>
+                            <option value="Média" selected>Média</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Crítica">Crítica</option>
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -257,12 +362,13 @@
                                         <th>Cliente</th>
                                         <th>Placa</th>
                                         <th>Veículo</th>
+                                        <th>Valor</th>
                                         <th>Concluído por</th>
                                     </tr>
                                 </thead>
                                 <tbody id="concluded-os-tbody">
                                     <tr>
-                                        <td colspan="4" class="empty-message">Nenhuma O.S. concluída ainda.</td>
+                                        <td colspan="5" class="empty-message">Nenhuma O.S. concluída ainda.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -281,12 +387,13 @@
                                         <th>Cliente</th>
                                         <th>Placa</th>
                                         <th>Veículo</th>
+                                        <th>Valor</th>
                                         <th>Excluído por</th>
                                     </tr>
                                 </thead>
                                 <tbody id="deleted-os-tbody">
                                     <tr>
-                                        <td colspan="4" class="empty-message">Nenhuma O.S. excluída no histórico.</td>
+                                        <td colspan="5" class="empty-message">Nenhuma O.S. excluída no histórico.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -297,6 +404,60 @@
         </section>
 
     </main>
+
+    <!-- MODAL DE CONFIRMAÇÃO DE ORÇAMENTO -->
+    <div id="modal-confirm-orc" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3>📝 Revisão do Orçamento</h3>
+                <button type="button" class="modal-close" id="btn-close-confirm-orc">&times;</button>
+            </div>
+            
+            <div class="confirm-content">
+                <p>Verifique se todas as informações estão corretas antes de registrar o orçamento no sistema.</p>
+                <div class="review-box">
+                    <p><strong>Cliente:</strong> <span id="rev-cliente"></span></p>
+                    <p><strong>Telefone:</strong> <span id="rev-telefone"></span></p>
+                    <p><strong>Veículo:</strong> <span id="rev-modelo"></span> (Placa: <span id="rev-placa"></span>)</p>
+                    <p><strong>Prioridade:</strong> <span id="rev-prioridade"></span></p>
+                    <p><strong>Relato:</strong> <span id="rev-problema"></span></p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" id="btn-cancel-confirm-orc">Voltar e Editar</button>
+                <button type="button" class="btn-primary" id="btn-save-confirm-orc">Confirmar e Registrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POP-UP PARA APROVAR ORÇAMENTO (INFORMAR PREÇO) -->
+    <div id="modal-approve-orc" class="modal-overlay hidden">
+        <div class="modal-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>💰 Informar Valor do Orçamento</h3>
+                <button type="button" class="modal-close" id="btn-close-approve-orc">&times;</button>
+            </div>
+            
+            <form id="form-approve-orc" class="custom-form" novalidate>
+                <input type="hidden" id="approve-orc-id">
+                <div class="confirm-content">
+                    <p>Para converter este orçamento em Ordem de Serviço, informe o valor final acordado com o cliente.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="approve-preco">Valor do Serviço (R$) *</label>
+                    <input type="text" id="approve-preco" placeholder="Ex: R$ 450,00" required autocomplete="off">
+                    <span class="error-msg" id="error-approve-preco">O valor é obrigatório.</span>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="btn-cancel-approve-orc">Cancelar</button>
+                    <button type="submit" class="btn-success">Confirmar Aprovação</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <!-- 4. MODAL POP-UP PARA EDIÇÃO DE O.S. -->
     <div id="modal-edit-os" class="modal-overlay hidden">
@@ -326,6 +487,16 @@
                         <input type="text" id="edit-os-modelo" required autocomplete="off">
                         <span class="error-msg" id="error-edit-modelo">O modelo do carro é obrigatório.</span>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="edit-os-prioridade">Prioridade *</label>
+                    <select id="edit-os-prioridade" required class="custom-select">
+                        <option value="Baixa">Baixa</option>
+                        <option value="Média">Média</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Crítica">Crítica</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
