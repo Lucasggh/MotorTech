@@ -1,6 +1,6 @@
 /**
  * ==========================================================================
- * MotorTech - Sistema de Oficina Mecânica & Quadro de Controle
+ * MotorTech - Sistema de Centro Automotivo & Quadro de Controle
  * Lógica da Aplicação com Login, Permissões e Histórico
  * ==========================================================================
  */
@@ -264,6 +264,7 @@ function configurarFormularios() {
         const telefoneInput = document.getElementById("orc-telefone");
         const placaInput = document.getElementById("orc-placa");
         const modeloInput = document.getElementById("orc-modelo");
+        const kmInput = document.getElementById("orc-km");
         const prioridadeInput = document.getElementById("orc-prioridade");
         const problemaInput = document.getElementById("orc-problema");
 
@@ -287,6 +288,11 @@ function configurarFormularios() {
         }
         if (!modeloInput.value.trim() || modeloInput.value.trim().length < 2 || !/[a-zA-Z]/.test(modeloInput.value)) {
             marcarErroCampo(modeloInput, "error-orc-modelo", "Informe o nome/modelo do carro (deve conter letras).");
+            formValido = false;
+        }
+        const kmVal = parseInt(kmInput.value, 10);
+        if (isNaN(kmVal) || kmVal < 0) {
+            marcarErroCampo(kmInput, "error-orc-km", "Informe uma quilometragem válida.");
             formValido = false;
         }
         if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
@@ -316,6 +322,7 @@ function configurarFormularios() {
             document.getElementById("rev-telefone").textContent = telefoneInput.value.trim();
             document.getElementById("rev-placa").textContent = placaInput.value.trim().toUpperCase();
             document.getElementById("rev-modelo").textContent = modeloInput.value.trim();
+            document.getElementById("rev-km").textContent = kmInput.value.trim();
             document.getElementById("rev-prioridade").textContent = prioridadeInput.value;
             document.getElementById("rev-problema").textContent = problemaInput.value.trim();
             
@@ -338,6 +345,7 @@ function configurarFormularios() {
             telefone: document.getElementById("orc-telefone").value.trim(),
             placa: document.getElementById("orc-placa").value.trim().toUpperCase(),
             modelo: document.getElementById("orc-modelo").value.trim(),
+            km: document.getElementById("orc-km").value.trim(),
             prioridade: document.getElementById("orc-prioridade").value,
             problema: document.getElementById("orc-problema").value.trim(),
             dataAbertura: new Date().toLocaleDateString("pt-BR")
@@ -396,6 +404,7 @@ function configurarFormularios() {
                 cliente: orc.cliente,
                 placa: orc.placa,
                 modelo: orc.modelo,
+                km: orc.km || "",
                 prioridade: orc.prioridade || "Média",
                 preco: preco,
                 problema: `[Aprovado do Orçamento] Telefone: ${orc.telefone}\n\nRelato: ${orc.problema}`,
@@ -462,6 +471,7 @@ function configurarFormularios() {
         const clienteInput = document.getElementById("os-cliente");
         const placaInput = document.getElementById("os-placa");
         const modeloInput = document.getElementById("os-modelo");
+        const kmInput = document.getElementById("os-km");
         const problemaInput = document.getElementById("os-problema");
 
         removerErrosFormulario(formOS);
@@ -479,6 +489,11 @@ function configurarFormularios() {
         }
         if (!modeloInput.value.trim() || modeloInput.value.trim().length < 2 || !/[a-zA-Z]/.test(modeloInput.value)) {
             marcarErroCampo(modeloInput, "error-modelo", "Informe o nome/modelo do carro (deve conter letras).");
+            formValido = false;
+        }
+        const kmValOS = parseInt(kmInput.value, 10);
+        if (isNaN(kmValOS) || kmValOS < 0) {
+            marcarErroCampo(kmInput, "error-os-km", "Informe uma quilometragem válida.");
             formValido = false;
         }
         if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
@@ -508,6 +523,7 @@ function configurarFormularios() {
                 cliente: clienteInput.value.trim(),
                 placa: placaInput.value.trim().toUpperCase(),
                 modelo: modeloInput.value.trim(),
+                km: kmInput.value.trim(),
                 prioridade: document.getElementById("os-prioridade").value,
                 problema: problemaInput.value.trim(),
                 dataAbertura: new Date().toLocaleDateString("pt-BR")
@@ -588,6 +604,7 @@ function configurarModalEdicao() {
         const clienteInput = document.getElementById("edit-os-cliente");
         const placaInput = document.getElementById("edit-os-placa");
         const modeloInput = document.getElementById("edit-os-modelo");
+        const kmInput = document.getElementById("edit-os-km");
         const prioridadeInput = document.getElementById("edit-os-prioridade");
         const problemaInput = document.getElementById("edit-os-problema");
 
@@ -608,6 +625,11 @@ function configurarModalEdicao() {
             marcarErroCampo(modeloInput, "error-edit-modelo", "Informe o nome/modelo do carro (deve conter letras).");
             formValido = false;
         }
+        const kmValEdit = parseInt(kmInput.value, 10);
+        if (isNaN(kmValEdit) || kmValEdit < 0) {
+            marcarErroCampo(kmInput, "error-edit-km", "Informe uma quilometragem válida.");
+            formValido = false;
+        }
         if (!problemaInput.value.trim() || problemaInput.value.trim().length < 10) {
             marcarErroCampo(problemaInput, "error-edit-problema", "Descreva detalhadamente o problema (mínimo 10 caracteres).");
             formValido = false;
@@ -621,6 +643,7 @@ function configurarModalEdicao() {
                 listaOS[osIndex].cliente = clienteInput.value.trim();
                 listaOS[osIndex].placa = placaInput.value.trim().toUpperCase();
                 listaOS[osIndex].modelo = modeloInput.value.trim();
+                listaOS[osIndex].km = kmInput.value.trim();
                 listaOS[osIndex].prioridade = prioridadeInput.value;
                 listaOS[osIndex].problema = problemaInput.value.trim();
                 
@@ -642,6 +665,7 @@ window.abrirModalEdicao = function(id) {
         document.getElementById("edit-os-cliente").value = osParaEditar.cliente;
         document.getElementById("edit-os-placa").value = osParaEditar.placa;
         document.getElementById("edit-os-modelo").value = osParaEditar.modelo;
+        document.getElementById("edit-os-km").value = osParaEditar.km || "";
         document.getElementById("edit-os-prioridade").value = osParaEditar.prioridade || "Média";
         document.getElementById("edit-os-problema").value = osParaEditar.problema;
         
@@ -806,6 +830,7 @@ function renderizarPainelOS(listaOS) {
                 <span class="badge" style="background-color: rgba(0, 188, 212, 0.15); color: #00bcd4; border: 1px solid #00bcd4;">CONFIRMADO / EM EXECUÇÃO</span>
                 <span class="badge badge-plate">${escaparHTML(os.placa)}</span>
                 <span class="badge badge-car">${escaparHTML(os.modelo)}</span>
+                ${os.km ? `<span class="badge badge-plate">${escaparHTML(os.km)} km</span>` : ''}
                 <span class="badge badge-priority badge-priority-${(os.prioridade || 'Média').toLowerCase().replace('é', 'e').replace('í', 'i')}">${escaparHTML(os.prioridade || 'Média')}</span>
                 ${os.preco ? `<span class="badge" style="background-color:var(--success-bg); color:var(--success); border: 1px solid var(--success);">${escaparHTML(os.preco)}</span>` : ''}
             </div>
@@ -847,6 +872,7 @@ function renderizarPainelOrcamentos(listaOrc) {
                 <span class="badge" style="background-color: rgba(255, 193, 7, 0.15); color: #ffc107; border: 1px solid #ffc107;">PENDENTE APROVAÇÃO</span>
                 <span class="badge badge-plate">${escaparHTML(orc.placa)}</span>
                 <span class="badge badge-car">${escaparHTML(orc.modelo)}</span>
+                ${orc.km ? `<span class="badge badge-plate">${escaparHTML(orc.km)} km</span>` : ''}
                 <span class="badge badge-priority badge-priority-${(orc.prioridade || 'Média').toLowerCase().replace('é', 'e').replace('í', 'i')}">${escaparHTML(orc.prioridade || 'Média')}</span>
             </div>
             <div class="os-description">${escaparHTML(orc.problema)}</div>

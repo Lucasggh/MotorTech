@@ -30,7 +30,7 @@
             <form id="form-login" novalidate>
                 <div class="form-group">
                     <label for="login-username">Usuário *</label>
-                    <input type="text" id="login-username" placeholder="Ex: admin ou mecanico" required autocomplete="off">
+                    <input type="text" id="login-username" placeholder="Ex: admin ou tecnico" required autocomplete="off">
                 </div>
                 
                 <div class="form-group">
@@ -183,7 +183,7 @@
                         <div class="form-group">
                             <label for="orc-placa">Placa do Veículo *</label>
                             <input type="text" id="orc-placa" placeholder="Ex: ABC1D23" required autocomplete="off">
-                            <small class="form-hint">Ajuda a buscar o histórico do carro na oficina.</small>
+                            <small class="form-hint">Ajuda a buscar o histórico do carro no centro automotivo.</small>
                             <span class="error-msg" id="error-orc-placa">A placa é obrigatória.</span>
                         </div>
                         <div class="form-group">
@@ -192,6 +192,13 @@
                             <small class="form-hint">Importante para saber qual peça comprar.</small>
                             <span class="error-msg" id="error-orc-modelo">O modelo é obrigatório.</span>
                         </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="orc-km">Quilometragem Atual (km) *</label>
+                        <input type="number" id="orc-km" placeholder="Ex: 50000" required autocomplete="off">
+                        <small class="form-hint">Necessário para acompanhar a vida útil e garantias.</small>
+                        <span class="error-msg" id="error-orc-km">A quilometragem é obrigatória.</span>
                     </div>
 
                     <div class="form-group">
@@ -202,12 +209,13 @@
                             <option value="Alta">Alta</option>
                             <option value="Crítica">Crítica</option>
                         </select>
+                        <small class="form-hint">Use Alta para clientes preferenciais/corporativos e Crítica para veículos imobilizados na via.</small>
                     </div>
 
                     <div class="form-group">
                         <label for="orc-problema">Sintomas / O que o cliente relatou? *</label>
                         <textarea id="orc-problema" rows="4" placeholder="Ex: Barulho na roda direita ao frear..." required autocomplete="off"></textarea>
-                        <small class="form-hint">Descreva com o máximo de detalhes para facilitar o diagnóstico do mecânico.</small>
+                        <small class="form-hint">Descreva com o máximo de detalhes para facilitar o diagnóstico do técnico especializado.</small>
                         <span class="error-msg" id="error-orc-problema">A descrição é obrigatória.</span>
                     </div>
 
@@ -248,6 +256,12 @@
                             <span class="error-msg" id="error-modelo">O modelo do carro é obrigatório.</span>
                         </div>
                     </div>
+                    
+                    <div class="form-group">
+                        <label for="os-km">Quilometragem Atual (km) *</label>
+                        <input type="number" id="os-km" placeholder="Ex: 50000" required autocomplete="off">
+                        <span class="error-msg" id="error-os-km">A quilometragem é obrigatória.</span>
+                    </div>
 
                     <div class="form-group">
                         <label for="os-prioridade">Prioridade *</label>
@@ -257,6 +271,7 @@
                             <option value="Alta">Alta</option>
                             <option value="Crítica">Crítica</option>
                         </select>
+                        <small class="form-hint">Use Alta para clientes preferenciais/corporativos e Crítica para veículos imobilizados na via.</small>
                     </div>
 
                     <div class="form-group">
@@ -275,7 +290,7 @@
             <div class="form-wrapper">
                 <div class="form-header">
                     <h2>Cadastro de Funcionário</h2>
-                    <p>Registre um mecânico ou colaborador administrativo no sistema.</p>
+                    <p>Registre um técnico especializado ou colaborador administrativo no sistema.</p>
                 </div>
 
                 <!-- Feedback de Sucesso -->
@@ -419,6 +434,7 @@
                     <p><strong>Cliente:</strong> <span id="rev-cliente"></span></p>
                     <p><strong>Telefone:</strong> <span id="rev-telefone"></span></p>
                     <p><strong>Veículo:</strong> <span id="rev-modelo"></span> (Placa: <span id="rev-placa"></span>)</p>
+                    <p><strong>Quilometragem:</strong> <span id="rev-km"></span> km</p>
                     <p><strong>Prioridade:</strong> <span id="rev-prioridade"></span></p>
                     <p><strong>Relato:</strong> <span id="rev-problema"></span></p>
                 </div>
@@ -490,6 +506,12 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="edit-os-km">Quilometragem Atual (km) *</label>
+                    <input type="number" id="edit-os-km" required autocomplete="off">
+                    <span class="error-msg" id="error-edit-km">A quilometragem é obrigatória.</span>
+                </div>
+
+                <div class="form-group">
                     <label for="edit-os-prioridade">Prioridade *</label>
                     <select id="edit-os-prioridade" required class="custom-select">
                         <option value="Baixa">Baixa</option>
@@ -497,6 +519,7 @@
                         <option value="Alta">Alta</option>
                         <option value="Crítica">Crítica</option>
                     </select>
+                    <small class="form-hint">Use Alta para clientes preferenciais/corporativos e Crítica para veículos imobilizados na via.</small>
                 </div>
 
                 <div class="form-group">
