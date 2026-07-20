@@ -220,6 +220,9 @@
                     </div>
 
                     <button type="button" class="btn-primary btn-block" id="btn-revisar-orcamento">Revisar e Salvar Orçamento</button>
+                    <small style="display: block; text-align: center; margin-top: 10px; color: var(--accent); font-size: 0.75rem; font-style: italic;">
+                        * O envio final do orçamento exige confirmação na tela seguinte.
+                    </small>
                 </form>
             </div>
         </section>
@@ -281,6 +284,9 @@
                     </div>
 
                     <button type="submit" class="btn-primary btn-block">Salvar Ordem de Serviço</button>
+                    <small style="display: block; text-align: center; margin-top: 10px; color: var(--accent); font-size: 0.75rem; font-style: italic;">
+                        * O cadastro definitivo desta O.S. ativará o serviço no quadro e exige confirmação.
+                    </small>
                 </form>
             </div>
         </section>
@@ -352,14 +358,42 @@
             </div>
 
             <div class="history-layout">
-                <!-- Coluna da Esquerda: Timeline de Logs de auditoria -->
-                <div class="history-card logs-card-width">
-                    <div class="card-header-clean">
-                        <h3>📋 Histórico de Operações</h3>
+                <!-- Coluna da Esquerda: Timeline de Logs e Painel de Backup -->
+                <div class="history-left-stack" style="display: flex; flex-direction: column; gap: 30px; width: 100%;">
+                    <!-- Card de Backup e Segurança (CH-02) -->
+                    <div class="history-card">
+                        <div class="card-header-clean">
+                            <h3>💾 Backup & Contingência</h3>
+                            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; line-height: 1.4;">
+                                Como o sistema armazena dados localmente no navegador, faça backups regulares para evitar a perda das solicitações de orçamento e ordens de serviço.
+                            </p>
+                        </div>
+                        <div class="backup-actions" style="display: flex; flex-direction: column; gap: 15px;">
+                            <button id="btn-export-backup" type="button" class="btn-primary btn-block" style="background-color: #2196f3; box-shadow: 0 4px 15px rgba(33, 150, 243, 0.2);">
+                                📥 Exportar Backup (JSON)
+                            </button>
+                            
+                            <div style="border-top: 1px solid var(--border-color); padding-top: 15px; display: flex; flex-direction: column; gap: 8px;">
+                                <label for="backup-file-input" style="font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-main);">
+                                    Restaurar Backup (JSON)
+                                </label>
+                                <input type="file" id="backup-file-input" accept=".json" class="custom-select" style="padding: 8px; font-size: 0.85rem; background: var(--bg-tertiary); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px;">
+                                <button id="btn-import-backup" type="button" class="btn-secondary btn-block" style="border-color: #ff9800; color: #ff9800;">
+                                    ⚡ Confirmar Restauração
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="logs-timeline" id="logs-timeline-container">
-                        <!-- Carregado via JS -->
-                        <div class="empty-message">Nenhuma atividade registrada.</div>
+
+                    <!-- Timeline de Logs de auditoria -->
+                    <div class="history-card logs-card-width" style="width: 100%;">
+                        <div class="card-header-clean">
+                            <h3>📋 Histórico de Operações</h3>
+                        </div>
+                        <div class="logs-timeline" id="logs-timeline-container">
+                            <!-- Carregado via JS -->
+                            <div class="empty-message">Nenhuma atividade registrada.</div>
+                        </div>
                     </div>
                 </div>
 
@@ -528,10 +562,13 @@
                     <span class="error-msg" id="error-edit-problema">A descrição do problema é obrigatória.</span>
                 </div>
 
-                <div class="modal-footer">
+                <div class="modal-footer" style="margin-top: 20px; padding-top: 15px;">
                     <button type="button" class="btn-secondary" id="btn-cancel-modal">Cancelar</button>
                     <button type="submit" class="btn-primary">Salvar Alterações</button>
                 </div>
+                <small style="display: block; text-align: right; margin-top: 5px; color: var(--accent); font-size: 0.75rem; font-style: italic;">
+                    * Alterações exigem confirmação definitiva.
+                </small>
             </form>
         </div>
     </div>

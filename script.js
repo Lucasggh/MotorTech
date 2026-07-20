@@ -11,6 +11,37 @@ const LOCAL_STORAGE_KEY_FUNC = "motortech_employees";
 const LOCAL_STORAGE_KEY_SESSION = "motortech_session";
 const LOCAL_STORAGE_KEY_HISTORY = "motortech_history";
 
+/**
+ * ==========================================================================
+ * CONFIGURAÇÃO CENTRALIZADA DE REGRAS E MENSAGENS (CH-03)
+ * Centraliza textos, alertas e limites do sistema para facilitar a manutenção.
+ * ==========================================================================
+ */
+const CONFIG_SISTEMA = {
+    MENSAGENS: {
+        CONFIRMAR_ORCAMENTO: "Confirma o registro e envio desta solicitação de orçamento?",
+        CONFIRMAR_APROVACAO: (valor) => `Confirma a aprovação deste orçamento no valor de ${valor} e a correspondente geração da Ordem de Serviço no painel?`,
+        CONFIRMAR_OS_NOVA: (cliente) => `Deseja realmente registrar esta nova Ordem de Serviço para o cliente "${cliente}"?`,
+        CONFIRMAR_OS_EDICAO: "Confirma a gravação das alterações nesta Ordem de Serviço?",
+        CONFIRMAR_OS_CONCLUIR: "Confirma que deseja marcar esta Ordem de Serviço como CONCLUÍDA? Ela será arquivada no histórico de concluídas.",
+        CONFIRMAR_OS_EXCLUIR: "ATENÇÃO CRÍTICA: Tem certeza que deseja EXCLUIR esta Ordem de Serviço do quadro? Ela será enviada para o histórico de exclusões.",
+        CONFIRMAR_ORC_REJEITAR: "ATENÇÃO CRÍTICA: Tem certeza que deseja REJEITAR e EXCLUIR permanentemente este orçamento? Esta ação é definitiva e não pode ser desfeita.",
+        CONFIRMAR_FUNC_REMOVER: "ATENÇÃO CRÍTICA: Tem certeza que deseja remover o cadastro e acesso deste funcionário?",
+        BACKUP_SUCESSO: "Backup exportado com sucesso! Salve o arquivo JSON em um local seguro.",
+        BACKUP_ERRO: "Falha ao exportar backup.",
+        RESTAURAR_AVISO: "ATENÇÃO CRÍTICA: A importação substituirá permanentemente todos os dados atuais do sistema. Deseja continuar?",
+        RESTAURAR_SUCESSO: "Dados restaurados com sucesso!",
+        RESTAURAR_ERRO_FORMATO: "Erro: O formato do arquivo de backup JSON é inválido ou incompatível.",
+        RESTAURAR_ERRO_LEITURA: "Erro ao ler o arquivo JSON. Certifique-se de que é um backup válido do MotorTech."
+    },
+    REGRAS: {
+        CLIENTE_MIN_LENGTH: 3,
+        MODELO_MIN_LENGTH: 2,
+        PROBLEMA_MIN_LENGTH: 10,
+        SENHA_MIN_LENGTH: 4
+    }
+};
+
 let currentUser = null;
 
 // Inicializa a aplicação
@@ -40,6 +71,7 @@ function inicializarApp() {
     configurarMenuMobile();
     configurarModalEdicao();
     configurarFiltros();
+    configurarBackup(); // Inicialização do módulo de backup e contingência (CH-02)
 }
 
 function configurarFiltros() {
@@ -337,8 +369,11 @@ function configurarFormularios() {
     btnCloseConfirmOrc.addEventListener("click", fecharModalConfirmOrc);
     btnCancelConfirmOrc.addEventListener("click", fecharModalConfirmOrc);
 
-    // Salvar Orçamento Final
+    // Salvar Orçamento Final com Confirmação do Usuário (CH-01)
     btnSaveConfirmOrc.addEventListener("click", () => {
+        if (!confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_ORCAMENTO)) {
+            return;
+        }
         const novoOrc = {
             id: Date.now(),
             cliente: document.getElementById("orc-cliente").value.trim(),
@@ -389,11 +424,16 @@ function configurarFormularios() {
             return;
         }
 
+        // Confirmação para conversão de orçamento em O.S. (CH-01)
+        if (!confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_APROVACAO(precoInput.value.trim()))) {
+            return;
+        }
+
         const idOrc = parseInt(document.getElementById("approve-orc-id").value);
         const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
         const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
         
-        const index = listaOrc.findIndex(o => o.id === idOrc);
+        const index = listaOrc.findIndex(o => o.id == idOrc);
         if (index > -1) {
             const orc = listaOrc[index];
             const preco = precoInput.value.trim();
@@ -518,6 +558,10 @@ function configurarFormularios() {
         }
 
         if (formValido) {
+            // Confirmação de segurança para envio de nova O.S. (CH-01)
+            if (!confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_OS_NOVA(clienteInput.value.trim()))) {
+                return;
+            }
             const novaOS = {
                 id: Date.now(),
                 cliente: clienteInput.value.trim(),
@@ -636,8 +680,12 @@ function configurarModalEdicao() {
         }
 
         if (formValido) {
+            // Confirmação de segurança para alteração de O.S. existente (CH-01)
+            if (!confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_OS_EDICAO)) {
+                return;
+            }
             const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
-            const osIndex = listaOS.findIndex(os => os.id === idOS);
+            const osIndex = listaOS.findIndex(os => os.id == idOS);
             
             if (osIndex > -1) {
                 listaOS[osIndex].cliente = clienteInput.value.trim();
@@ -658,7 +706,7 @@ function configurarModalEdicao() {
 
 window.abrirModalEdicao = function(id) {
     const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
-    const osParaEditar = listaOS.find(os => os.id === id);
+    const osParaEditar = listaOS.find(os => os.id == id);
     
     if (osParaEditar) {
         document.getElementById("edit-os-id").value = osParaEditar.id;
@@ -677,12 +725,16 @@ window.abrirModalEdicao = function(id) {
    6. CONCLUSÃO E EXCLUSÃO (CADEIA DE ESTADOS DA O.S.)
    ========================================================================== */
 
+/**
+ * Conclui uma Ordem de Serviço, arquivando-a e registrando o responsável.
+ * @param {number} id - Identificador único da O.S.
+ */
 window.concluirOS = function(id) {
-    if (confirm("Deseja marcar esta Ordem de Serviço como CONCLUÍDA?")) {
+    if (confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_OS_CONCLUIR)) {
         const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
         const historico = obterDados(LOCAL_STORAGE_KEY_HISTORY);
         
-        const osIndex = listaOS.findIndex(os => os.id === id);
+        const osIndex = listaOS.findIndex(os => os.id == id);
         if (osIndex > -1) {
             const osConcluida = listaOS[osIndex];
             osConcluida.concluidaPor = currentUser.username;
@@ -701,12 +753,16 @@ window.concluirOS = function(id) {
     }
 }
 
+/**
+ * Remove (exclui) uma Ordem de Serviço ativando a contingência histórica.
+ * @param {number} id - Identificador único da O.S.
+ */
 window.removerOS = function(id) {
-    if (confirm("ATENÇÃO: Deseja realmente remover (excluir) esta Ordem de Serviço do quadro?")) {
+    if (confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_OS_EXCLUIR)) {
         const listaOS = obterDados(LOCAL_STORAGE_KEY_OS);
         const historico = obterDados(LOCAL_STORAGE_KEY_HISTORY);
         
-        const osIndex = listaOS.findIndex(os => os.id === id);
+        const osIndex = listaOS.findIndex(os => os.id == id);
         if (osIndex > -1) {
             const osDeletada = listaOS[osIndex];
             osDeletada.excluidaPor = currentUser.username;
@@ -725,15 +781,23 @@ window.removerOS = function(id) {
     }
 }
 
+/**
+ * Abre o modal para definir o valor de aprovação do orçamento.
+ * @param {number} id - Identificador único do orçamento.
+ */
 window.aprovarOrcamento = function(id) {
     document.getElementById("approve-orc-id").value = id;
     document.getElementById("modal-approve-orc").classList.remove("hidden");
 }
 
+/**
+ * Rejeita e deleta permanentemente um orçamento pendente.
+ * @param {number} id - Identificador único do orçamento.
+ */
 window.rejeitarOrcamento = function(id) {
-    if (confirm("Deseja rejeitar e excluir este orçamento?")) {
+    if (confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_ORC_REJEITAR)) {
         const listaOrc = obterDados(LOCAL_STORAGE_KEY_ORC);
-        const index = listaOrc.findIndex(o => o.id === id);
+        const index = listaOrc.findIndex(o => o.id == id);
         if (index > -1) {
             const orc = listaOrc[index];
             listaOrc.splice(index, 1);
@@ -746,11 +810,15 @@ window.rejeitarOrcamento = function(id) {
     }
 }
 
+/**
+ * Remove o cadastro de um funcionário do banco de dados interno.
+ * @param {number} id - Identificador único do funcionário.
+ */
 window.removerFuncionario = function(id) {
-    if (confirm("Deseja remover o acesso deste funcionário?")) {
+    if (confirm(CONFIG_SISTEMA.MENSAGENS.CONFIRMAR_FUNC_REMOVER)) {
         const listaFunc = obterDados(LOCAL_STORAGE_KEY_FUNC);
-        const funcionario = listaFunc.find(f => f.id === id);
-        const novaLista = listaFunc.filter(func => func.id !== id);
+        const funcionario = listaFunc.find(f => f.id == id);
+        const novaLista = listaFunc.filter(func => func.id != id);
         
         salvarDados(LOCAL_STORAGE_KEY_FUNC, novaLista);
         
@@ -1047,7 +1115,11 @@ function escaparHTML(texto) {
     return div.innerHTML;
 }
 
-// Validador de CPF da Receita Federal
+/**
+ * Validador de CPF utilizando a regra oficial de dígitos verificadores da Receita Federal.
+ * @param {string} cpf - String contendo o CPF a ser validado.
+ * @returns {boolean} True se for um CPF válido, False caso contrário.
+ */
 function validarCPF(cpf) {
     const limpo = cpf.replace(/\D/g, "");
     if (limpo.length !== 11 || /^(\d)\1{10}$/.test(limpo)) return false;
@@ -1065,4 +1137,91 @@ function validarCPF(cpf) {
     if (dv2 !== parseInt(limpo.charAt(10))) return false;
     
     return true;
+}
+
+/**
+ * Inicializa os eventos e funções do módulo de Backup & Contingência (CH-02).
+ * Permite a exportação e restauração dos dados do localStorage em arquivos JSON.
+ */
+function configurarBackup() {
+    const btnExport = document.getElementById("btn-export-backup");
+    const fileInput = document.getElementById("backup-file-input");
+    const btnImport = document.getElementById("btn-import-backup");
+
+    if (btnExport) {
+        btnExport.addEventListener("click", () => {
+            try {
+                const dadosBackup = {
+                    os: obterDados(LOCAL_STORAGE_KEY_OS),
+                    orc: obterDados(LOCAL_STORAGE_KEY_ORC),
+                    func: obterDados(LOCAL_STORAGE_KEY_FUNC),
+                    history: obterDados(LOCAL_STORAGE_KEY_HISTORY)
+                };
+
+                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadosBackup, null, 2));
+                const downloadAnchor = document.createElement('a');
+                downloadAnchor.setAttribute("href", dataStr);
+                const dataHoje = new Date().toISOString().slice(0, 10);
+                downloadAnchor.setAttribute("download", `motortech_backup_${dataHoje}.json`);
+                document.body.appendChild(downloadAnchor);
+                downloadAnchor.click();
+                downloadAnchor.remove();
+
+                registrarLogDeAuditoria("Realizou backup completo dos dados (JSON)", "geral");
+                alert(CONFIG_SISTEMA.MENSAGENS.BACKUP_SUCESSO);
+            } catch (err) {
+                console.error("Erro ao exportar backup:", err);
+                alert(CONFIG_SISTEMA.MENSAGENS.BACKUP_ERRO);
+            }
+        });
+    }
+
+    if (btnImport) {
+        btnImport.addEventListener("click", () => {
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                alert("Por favor, selecione um arquivo de backup (.json) primeiro.");
+                return;
+            }
+
+            const arquivo = fileInput.files[0];
+            const leitor = new FileReader();
+
+            leitor.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+
+                    // Validação simples da estrutura do backup importado
+                    if (
+                        dadosImportados &&
+                        Array.isArray(dadosImportados.os) &&
+                        Array.isArray(dadosImportados.orc) &&
+                        Array.isArray(dadosImportados.func) &&
+                        dadosImportados.history &&
+                        Array.isArray(dadosImportados.history.logs) &&
+                        Array.isArray(dadosImportados.history.concluidas) &&
+                        Array.isArray(dadosImportados.history.excluidas)
+                    ) {
+                        if (confirm(CONFIG_SISTEMA.MENSAGENS.RESTAURAR_AVISO)) {
+                            salvarDados(LOCAL_STORAGE_KEY_OS, dadosImportados.os);
+                            salvarDados(LOCAL_STORAGE_KEY_ORC, dadosImportados.orc);
+                            salvarDados(LOCAL_STORAGE_KEY_FUNC, dadosImportados.func);
+                            salvarDados(LOCAL_STORAGE_KEY_HISTORY, dadosImportados.history);
+
+                            registrarLogDeAuditoria("Restaurou banco de dados via backup JSON", "geral");
+                            atualizarTelas();
+                            fileInput.value = "";
+                            alert(CONFIG_SISTEMA.MENSAGENS.RESTAURAR_SUCESSO);
+                        }
+                    } else {
+                        alert(CONFIG_SISTEMA.MENSAGENS.RESTAURAR_ERRO_FORMATO);
+                    }
+                } catch (err) {
+                    console.error("Erro ao importar backup:", err);
+                    alert(CONFIG_SISTEMA.MENSAGENS.RESTAURAR_ERRO_LEITURA);
+                }
+            };
+
+            leitor.readAsText(arquivo);
+        });
+    }
 }
